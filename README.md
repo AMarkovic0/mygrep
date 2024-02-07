@@ -9,7 +9,7 @@ to recursively search for a pattern and display line number.
 ## Example:
 
 `
-pgrep --include=*.rs let
+mygrep --include=*.rs let
 `
 
 Will offer all lines when word **let** has been matched and ask for user input
