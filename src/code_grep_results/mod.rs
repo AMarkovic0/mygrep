@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use regex::Regex;
+use colored::*;
 
 #[derive(Debug)]
 pub struct GrepRes {
@@ -36,7 +37,13 @@ impl GrepRes {
     }
 
     pub fn print(&self, index: usize) {
-        println!("[{}] File: {} Line: {} Text: {}", index, self.path, self.line, self.text);
+        let s: String = format!(
+            "[{}] {}:{}:",
+            index,
+            self.getp().purple(),
+            self.getl().to_string().green()
+        );
+        println!("{} {}", s.blue(), self.gett());
     }
 
     pub fn deserialize_output(res: String) -> Vec<Self> {
