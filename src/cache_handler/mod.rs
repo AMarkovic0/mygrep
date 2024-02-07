@@ -33,10 +33,6 @@ impl Cache {
         Ok(())
     }
 
-    pub fn read_history(&self) -> std::io::Result<String> {
-        self.history.read()
-    }
-
     pub fn print_history(&self) -> std::io::Result<()> {
         self.history.print()?;
         Ok(())
