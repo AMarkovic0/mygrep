@@ -23,7 +23,7 @@ impl ConfigFile {
     fn get_path_str(&self) -> std::io::Result<&str> {
         match self.path.to_str() {
             Some(s) => Ok(s),
-            None => Err(std::io::Error::new(std::io::ErrorKind::NotFound, "Path str not found"))
+            None => Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Path str not found"))
         }
     }
 
