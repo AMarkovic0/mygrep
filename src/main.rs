@@ -2,26 +2,37 @@ mod code_grep_results;
 mod cache_handler;
 mod cli;
 
-use std::env;
-use std::error::Error;
-use std::process::Command;
-use std::fs;
-use std::path::PathBuf;
+use std::{
+    env,
+    fs,
+    error::Error,
+    path::PathBuf,
+};
+use futures_lite::{
+    io::BufReader,
+    prelude::*,
+};
+use async_process::{
+    Command,
+    Stdio,
+};
+use async_io;
 
 use crate::code_grep_results::GrepRes;
 use crate::cache_handler::Cache;
 
-fn open_vim(selected_element: Option<&GrepRes>) {
+fn open_vim(selected_element: Option<&GrepRes>) -> Result<(), Box<dyn Error>> {
+    use std::process::Command;
+
     if let Some(selected) = selected_element {
         Command::new("vim")
             .arg(format!("+{}", selected.getl()))
-            .arg(fs::canonicalize(&PathBuf::from(selected.getp()))
-                .expect("ERROR: Selected path does not exists"))
-            .spawn()
-            .expect("ERROR: Vim opening failed")
-            .wait()
-            .expect("ERROR: Vim execution failed");
+            .arg(fs::canonicalize(&PathBuf::from(selected.getp()))?)
+            .spawn()?
+            .wait()?;
     }
+
+    Ok(())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -29,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .skip(1)
         .collect::<Vec<String>>();
 
-    let home_dir_path = env::home_dir().expect("ERROR: Failed getting path to home dir");
+    let home_dir_path = env::home_dir().ok_or("Error: Cannot find home directory")?;
     if let Some(c) = Cache::new(home_dir_path) {
         c.cache_history(&args.join(" "))?;
         if cli::check_for_history() {
@@ -43,18 +54,21 @@ fn main() -> Result<(), Box<dyn Error>> {
         return Ok(())
     }
 
-    let res = Command::new("grep")
-        .args(args)
-        .arg("-rn")
-        .output()
-        .expect("Error: grep command failed to execute");
+    let res_vec = async_io::block_on(async {
 
-    let res = String::from_utf8(res.stdout)
-        .expect("ERROR: Cannot convert grep output to string");
-    let res_vec = GrepRes::deserialize_output(res);
+        let mut grep = Command::new("grep")
+            .args(args)
+            .arg("-rn")
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("Error: Failed to spawn grep command");
+
+        let lines = BufReader::new(grep.stdout.take().unwrap()).lines();
+        GrepRes::deserialize_output(lines).await
+    })?;
 
     if res_vec.len() > 0 {
-        open_vim(res_vec.get(cli::select_output()));
+        open_vim(res_vec.get(cli::select_output()))?;
     }
 
     Ok(())

@@ -1,5 +1,14 @@
 use std::str::FromStr;
+use std::error::Error;
 
+use futures_lite::{
+    io::{
+        Lines,
+        BufReader,
+    },
+    stream::StreamExt,
+};
+use async_process::ChildStdout;
 use regex::Regex;
 use colored::*;
 
@@ -11,8 +20,8 @@ pub struct GrepRes {
 }
 
 impl GrepRes {
-    pub fn new(s: &str) -> Option<GrepRes> {
-        match Regex::new(r"^([^:]+):(\d+):\s*(.*)").ok()?.captures(s) {
+    pub fn new(s: String) -> Option<GrepRes> {
+        match Regex::new(r"^([^:]+):(\d+):\s*(.*)").ok()?.captures(&s) {
             Some(captures) => Some(GrepRes {
                 path: captures[1].to_string(),
                 line: FromStr::from_str(&captures[2]).unwrap(),
@@ -46,16 +55,18 @@ impl GrepRes {
         println!("{} {}", s.blue(), self.gett());
     }
 
-    pub fn deserialize_output(res: String) -> Vec<Self> {
+    pub async fn deserialize_output(mut lines: Lines<BufReader<ChildStdout>>) -> Result<Vec<Self>, Box<dyn Error>> {
+        let mut index = 0;
         let mut res_vec = Vec::new();
 
-        for (index, r) in res.split("\n").collect::<Vec<&str>>().iter().enumerate() {
-            if let Some(gres) = GrepRes::new(r) {
+        while let Some(line) = lines.next().await {
+            if let Some(gres) = GrepRes::new(line?) {
                 gres.print(index);
                 res_vec.push(gres);
+                index += 1;
             }
         }
 
-        res_vec
+        Ok(res_vec)
     }
 }
