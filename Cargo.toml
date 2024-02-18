@@ -11,3 +11,4 @@ colored = { version = "2" }
 async-process = { version = "2.0.1" }
 async-io = { version = "2.3.1" }
 futures-lite = { version = "1" }
+ctrlc = { version = "3.4.2" }
