@@ -52,7 +52,7 @@ Example: pgrep -i --include=*.c 'hello world' main.c
 
         let _ = BufReader::new(stdin().take(1024)).read_line(&mut usr_in);
 
-        match usr_in.parse::<u32>() {
+        match usr_in.trim_end().parse::<u32>() {
             Ok(res) => Some(res as usize),
             Err(_) => None
         }
