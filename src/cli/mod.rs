@@ -1,13 +1,9 @@
     use std::env;
     use std::process::Command;
-
-    macro_rules! read {
-        ($out:ident as $type:ty) => {
-            let mut inner = String::new();
-            std::io::stdin().read_line(&mut inner).expect("ERROR: String expected");
-            let $out = inner.trim().parse::<$type>().expect("ERROR: Parsing user input");
-        };
-    }
+    use std::io::BufReader;
+    use std::io::stdin;
+    use std::io::Read;
+    use std::io::BufRead;
 
     fn check_for(arg: &str) -> bool {
         let mut ret = false;
@@ -51,7 +47,13 @@ Example: pgrep -i --include=*.c 'hello world' main.c
             .expect("ERROR: Grep failed to execute");
     }
 
-    pub fn select_output() -> usize {
-        read!(selected as usize);
-        selected
+    pub fn select_output() -> Option<usize> {
+        let mut usr_in = String::new();
+
+        let _ = BufReader::new(stdin().take(1024)).read_line(&mut usr_in);
+
+        match usr_in.parse::<u32>() {
+            Ok(res) => Some(res as usize),
+            Err(_) => None
+        }
     }

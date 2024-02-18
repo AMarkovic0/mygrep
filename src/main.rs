@@ -68,7 +68,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     })?;
 
     if res_vec.len() > 0 {
-        open_vim(res_vec.get(cli::select_output()))?;
+        open_vim(res_vec.get(
+            cli::select_output()
+            .ok_or("Error: Failed to parse user input as line number")?
+        ))?;
     }
 
     Ok(())
