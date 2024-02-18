@@ -55,15 +55,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let res_vec = async_io::block_on(async {
-
         let mut grep = Command::new("grep")
             .args(args)
             .arg("-rn")
             .stdout(Stdio::piped())
             .spawn()
             .expect("Error: Failed to spawn grep command");
-
         let lines = BufReader::new(grep.stdout.take().unwrap()).lines();
+
+        ctrlc::set_handler(move || {
+            let _ = grep.kill();
+        }).expect("Error setting Ctrl-C handler");
+
         GrepRes::deserialize_output(lines).await
     })?;
 
